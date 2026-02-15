@@ -1,0 +1,32 @@
+{
+ "app": "insights",
+ "bg_color": "gray",
+ "creation": "2026-02-09 09:59:30.523689",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon_type": "App",
+ "idx": 70,
+ "label": "Insights",
+ "link": "/insights",
+ "link_type": "External",
+ "logo_url": "/assets/insights/frontend/insights-logo.png",
+ "modified": "2026-02-12 09:20:46.499198",
+ "modified_by": "Administrator",
+ "name": "Insights",
+ "owner": "Administrator",
+ "parent_icon": "",
+ "restrict_removal": 1,
+ "roles": [
+  {
+   "role": "Administrator"
+  },
+  {
+   "role": "Insights Admin"
+  },
+  {
+   "role": "Insights User"
+  }
+ ],
+ "standard": 1
+}
