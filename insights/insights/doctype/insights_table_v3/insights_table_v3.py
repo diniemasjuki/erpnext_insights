@@ -80,6 +80,7 @@ class InsightsTablev3(Document):
             check_table_permission,
         )
 
+        # TODO: replace with frappe.has_permission()
         check_table_permission(data_source, table_name)
 
         ds_type = frappe.db.get_value("Insights Data Source v3", data_source, "type", cache=True)
@@ -107,6 +108,9 @@ def get_table_name(data_source, table):
 
 def apply_user_permissions(t, data_source, table_name):
     if not frappe.db.get_value("Insights Data Source v3", data_source, "is_site_db", cache=True):
+        return t
+
+    if not frappe.db.get_single_value("Insights Settings", "apply_user_permissions", cache=True):
         return t
 
     if table_name == "tabSingles":
