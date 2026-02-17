@@ -11,7 +11,7 @@
  "link": "/insights",
  "link_type": "External",
  "logo_url": "/assets/insights/frontend/insights-logo.png",
- "modified": "2026-02-12 09:20:46.499198",
+ "modified": "2026-02-17 21:49:31.809956",
  "modified_by": "Administrator",
  "name": "Insights",
  "owner": "Administrator",
@@ -19,13 +19,10 @@
  "restrict_removal": 1,
  "roles": [
   {
-   "role": "Administrator"
+   "role": "APP - Insights Admin"
   },
   {
-   "role": "Insights Admin"
-  },
-  {
-   "role": "Insights User"
+   "role": "APP - Insights User"
   }
  ],
  "standard": 1
