@@ -16,6 +16,7 @@ from frappe.utils import get_files_path, now
 from frappe.utils.background_jobs import is_job_enqueued
 from ibis import _
 from ibis.backends.duckdb import Backend as DuckDBBackend
+from ibis.common.exceptions import TableNotFound
 from ibis.expr.types import Expr
 
 import insights
@@ -44,15 +45,24 @@ class Warehouse:
 
         db = ibis.duckdb.connect(path, read_only=read_only)
 
-        # allow temp directory access to enable batch imports using parquet files
-        tmp_dir = Path(tempfile.gettempdir())
-        db.raw_sql(f"SET allowed_directories = ['{tmp_dir}']")
-        db.raw_sql("SET enable_external_access = false")
+        if not read_only:
+            self._configure_temp_directory_access(db)
 
         if database:
             db.raw_sql(f"USE '{database}'")
 
         return db
+
+    def _configure_temp_directory_access(self, db: DuckDBBackend) -> None:
+        tmp_dir = str(Path(tempfile.gettempdir())).replace("'", "''")
+
+        # Some environments start with external access already disabled.
+        # Best effort: try enabling it first, then configure directory allowlist.
+        with suppress(Exception):
+            db.raw_sql("SET enable_external_access = true")
+
+        db.raw_sql(f"SET allowed_directories = ['{tmp_dir}']")
+        db.raw_sql("SET enable_external_access = false")
 
     def create_database(self, database: str):
         with self.get_write_connection() as db:
@@ -244,7 +254,7 @@ class WarehouseTable:
     def get_ibis_table(self, import_if_not_exists: bool = True) -> Expr:
         try:
             return insights.warehouse.db.table(self.warehouse_table_name)
-        except Exception:
+        except TableNotFound:
             if import_if_not_exists:
                 self.enqueue_import()
                 remote_table = self.get_remote_table()
@@ -258,6 +268,9 @@ class WarehouseTable:
                 frappe.throw(
                     f"{self.table_name} of {self.data_source} is not imported to the data warehouse."
                 )
+        except Exception as e:
+            frappe.log_error(e)
+            frappe.throw("Error accessing the data warehouse. Please try again.")
 
     def get_remote_table(self) -> Expr:
         ds = InsightsDataSourcev3.get_doc(self.data_source)
