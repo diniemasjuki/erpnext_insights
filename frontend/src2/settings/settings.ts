@@ -1,4 +1,5 @@
 import useDocumentResource from '../helpers/resource'
+import { __ } from '../translation'
 import { createToast } from '../helpers/toasts'
 
 let settings = undefined as Settings | undefined
@@ -18,7 +19,7 @@ function makeSettings() {
 			allowed_origins: '',
 			max_records_to_sync: 10_00_000,
 			max_memory_usage: 512,
-			fiscal_year_start: '2024-04-01',
+			fiscal_year_start: '',
 			week_starts_on: 'Monday',
 			enable_data_store: false,
 			apply_user_permissions: false,
@@ -27,8 +28,8 @@ function makeSettings() {
 	})
 	_settings.onAfterSave(() =>
 		createToast({
-			title: 'Settings Updated',
-			message: 'Your settings have been updated successfully',
+			title: __('Settings Updated'),
+			message: __('Your settings have been updated successfully'),
 			variant: 'success',
 		})
 	)

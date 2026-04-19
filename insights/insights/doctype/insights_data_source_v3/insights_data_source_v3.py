@@ -10,6 +10,7 @@ from frappe.model.document import Document
 from ibis import BaseBackend
 
 import insights
+from insights.api.telemetry import capture_event
 from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 import (
     InsightsTableLinkv3,
 )
@@ -78,16 +79,18 @@ class InsightsDataSourceDocument:
             }
         )
 
+    def after_insert(self):
+        if not self.is_site_db:
+            capture_event("data_source_created")
+
     def on_update(self):
         if self.type == "REST API":
             self.db_set(
                 {
                     "database_type": "DuckDB",
                     "database_name": None,  # this should never be used
-                    "schema": self.name.replace(".", "_"),
                 }
             )
-            insights.warehouse.create_database(self.schema)
 
         if self.is_site_db:
             self.db_set("is_frappe_db", 1)
@@ -270,6 +273,20 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         insights.db_connections[self.name] = db
         return db
 
+    def get_sqlglot_dialect(self) -> str | None:
+        if self.type == "REST API":
+            return "duckdb"
+
+        return {
+            "MariaDB": "mysql",
+            "PostgreSQL": "postgres",
+            "SQLite": "sqlite",
+            "DuckDB": "duckdb",
+            "BigQuery": "bigquery",
+            "MSSQL": "tsql",
+            "ClickHouse": "clickhouse",
+        }.get(self.database_type)
+
     def _get_db_connection(self) -> BaseBackend:
         if self.is_site_db:
             return get_sitedb_connection()
@@ -325,7 +342,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         return db.list_tables(database=quoted_db_name)
 
     @frappe.whitelist()
-    def test_connection(self, raise_exception=False):
+    def test_connection(self, raise_exception: bool | None = False):
         if self.type == "REST API":
             return self.test_api_connection(raise_exception)
 
@@ -336,7 +353,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             if raise_exception:
                 raise e
 
-    def test_api_connection(self, raise_exception=False):
+    def test_api_connection(self, raise_exception: bool | None = False):
         client = self.get_api_client()
         try:
             client.test_connection()
@@ -408,6 +425,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.database_type == "PostgreSQL" and "." in table_name:
             schema, table = table_name.split(".")
             return remote_db.table(table, database=schema)
+        if self.type == "REST API":
+            return remote_db.table(table_name, database=self.schema)
         return remote_db.table(table_name)
 
 
